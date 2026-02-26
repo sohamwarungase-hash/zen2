@@ -1,19 +1,28 @@
 {
-  "name": "mgs-backend",
+  "name": "zenbackend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.js",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "scripts": {
-    "dev": "nodemon src/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "dev": "npm run kill-port && nodemon src/index.js",
+    "dev:windows": "taskkill /F /IM node.exe 2>nul || nodemon src/index.js",
+    "kill-port": "npx -y kill-port 5000",
     "start": "node src/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "@prisma/client": "^7.4.1",
+    "@prisma/client": "^5.22.0",
     "@supabase/supabase-js": "^2.97.0",
     "axios": "^1.13.5",
     "cloudinary": "^2.9.0",
@@ -21,13 +30,21 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
-    "prisma": "^7.4.1",
+    "prisma": "^5.22.0",
     "socket.io": "^4.8.3",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.19.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@vitest/ui": "^4.0.18",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2",
+    "vitest": "^4.0.18"
   }
 }
