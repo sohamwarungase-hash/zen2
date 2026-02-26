@@ -54,7 +54,8 @@ DATABASE_URL="postgresql://user:password@host:port/dbname?schema=public"
 DIRECT_URL="postgresql://user:password@host:port/dbname?schema=public"
 CLIENT_URL="http://localhost:3000"
 SUPABASE_URL="https://your-project.supabase.co"
-SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+SUPABASE_SERVICE_ROLE_KEY="your-service-role-key" # preferred
+SUPABASE_ANON_KEY="your-anon-key" # optional fallback if service role key is not set
 GOOGLE_GENAI_API_KEY="your-gemini-api-key"
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
