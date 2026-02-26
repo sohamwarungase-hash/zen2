@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/ui/use-toast'
 import { registerUser } from '@/api/authApi'
+import useAuthStore from '@/store/authStore'   // ✅ fixed: was missing
 import { Shield, Loader2 } from 'lucide-react'
 
 export default function Register() {
