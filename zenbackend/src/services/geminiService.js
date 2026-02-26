@@ -59,7 +59,7 @@ Respond ONLY with valid JSON (no markdown, no code fences) in this exact format:
         return {
             category: 'OTHER',
             department: 'SANITATION',
-            priority: 3,
+            priority: 5,
             reasoning: 'AI classification failed — defaults applied.',
         };
     }
