@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "../services/supabase";
+import * as SecureStore from "expo-secure-store";
 import { API_CONFIG } from "../config/api";
-import { Session } from "@supabase/supabase-js";
 
 type UserProfile = {
     id: string;
@@ -15,95 +14,128 @@ type AuthContextType = {
     isSignedIn: boolean;
     user: UserProfile | null;
     loading: boolean;
+    signIn: (email: string, password: string) => Promise<void>;
+    register: (name: string, email: string, password: string) => Promise<void>;
     refreshProfile: () => Promise<void>;
     getToken: () => Promise<string | null>;
     signOut: () => Promise<void>;
 };
 
+const AUTH_TOKEN_KEY = "zensolve_access_token";
+
 const AuthContext = createContext<AuthContextType>({
     isSignedIn: false,
     user: null,
     loading: true,
+    signIn: async () => { },
+    register: async () => { },
     refreshProfile: async () => { },
     getToken: async () => null,
     signOut: async () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [session, setSession] = useState<Session | null>(null);
+    const [token, setToken] = useState<string | null>(null);
     const [user, setUser] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Initial session check
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            if (session) {
-                fetchProfile(session.access_token);
-            } else {
-                setLoading(false);
+        const bootstrap = async () => {
+            const storedToken = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+            setToken(storedToken);
+            if (storedToken) {
+                await fetchProfile(storedToken);
             }
-        });
-
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            if (session) {
-                fetchProfile(session.access_token);
-            } else {
-                setUser(null);
-                setLoading(false);
-            }
-        });
-
-        return () => subscription.unsubscribe();
+            setLoading(false);
+        };
+        bootstrap();
     }, []);
 
-    const fetchProfile = async (token: string) => {
+    const fetchProfile = async (accessToken: string) => {
         try {
-            const response = await fetch(API_CONFIG.ENDPOINTS.ME, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+            const response = await fetch(API_CONFIG.ENDPOINTS.PROFILE, {
+                headers: { Authorization: `Bearer ${accessToken}` },
             });
-            if (response.ok) {
-                const profile = await response.json();
-                setUser(profile);
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch profile");
             }
+
+            const profile = await response.json();
+            setUser(profile);
         } catch (error) {
-            console.error(
-                "Failed to fetch user profile. This is usually a backend connectivity issue, not a Supabase login issue:",
-                error
-            );
-        } finally {
-            setLoading(false);
+            console.error("Profile fetch failed:", error);
+            await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+            setToken(null);
+            setUser(null);
+        }
+    };
+
+    const signIn = async (email: string, password: string) => {
+        const response = await fetch(API_CONFIG.ENDPOINTS.LOGIN, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || "Login failed");
+        }
+
+        const accessToken = result?.session?.access_token;
+        if (!accessToken) {
+            throw new Error("Missing access token in login response");
+        }
+
+        await SecureStore.setItemAsync(AUTH_TOKEN_KEY, accessToken);
+        setToken(accessToken);
+        await fetchProfile(accessToken);
+    };
+
+    const register = async (name: string, email: string, password: string) => {
+        const response = await fetch(API_CONFIG.ENDPOINTS.REGISTER, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email, password }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || "Registration failed");
         }
     };
 
     const refreshProfile = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            await fetchProfile(session.access_token);
-        }
+        if (!token) return;
+        await fetchProfile(token);
     };
 
-    const getToken = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        return session?.access_token ?? null;
-    };
+    const getToken = async () => token;
 
     const signOut = async () => {
-        await supabase.auth.signOut();
+        if (token) {
+            await fetch(API_CONFIG.ENDPOINTS.LOGOUT, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+            }).catch(() => null);
+        }
+
+        await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+        setToken(null);
+        setUser(null);
     };
 
     return (
         <AuthContext.Provider value={{
-            isSignedIn: !!session,
+            isSignedIn: !!token,
             user,
             loading,
+            signIn,
+            register,
             refreshProfile,
             getToken,
-            signOut
+            signOut,
         }}>
             {children}
         </AuthContext.Provider>

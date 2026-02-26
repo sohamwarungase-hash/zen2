@@ -14,13 +14,14 @@ import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { Ionicons } from "@expo/vector-icons";
-import { supabase } from "@/services/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const { signIn } = useAuth();
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -30,13 +31,7 @@ export default function Login() {
 
         setLoading(true);
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
-
-            if (error) throw error;
-
+            await signIn(email, password);
             router.replace("/(citizen)/home");
         } catch (err: any) {
             Alert.alert("Login Failed", err.message || "An error occurred");

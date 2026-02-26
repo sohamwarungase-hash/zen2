@@ -16,8 +16,6 @@ import { useState } from "react";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
-import * as FileSystem from "expo-file-system/legacy";
-import { supabase } from "@/services/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { API_CONFIG } from "@/config/api";
 import { COLORS, RADIUS, SHADOWS, SPACING, TYPOGRAPHY } from "@/constants/theme";
@@ -39,46 +37,6 @@ export default function SubmitComplaint() {
     } | null>(null);
     const [loading, setLoading] = useState(false);
     const [locating, setLocating] = useState(false);
-
-    const uploadImage = async (uri: string, userId: string) => {
-        const timestamp = Date.now();
-        const ext = uri.split('.').pop() || 'jpg';
-        const filePath = `complaints/${userId}-${timestamp}.${ext}`;
-
-        try {
-            // 1. Read the image as base64
-            const base64 = await FileSystem.readAsStringAsync(uri, {
-                encoding: FileSystem.EncodingType.Base64,
-            });
-
-            // 2. Convert base64 to Uint8Array using atob
-            const binaryString = atob(base64);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-
-            // 3. Upload to bucket
-            const { error: uploadError } = await supabase.storage
-                .from('complaints-images')
-                .upload(filePath, bytes, {
-                    contentType: `image/${ext}`,
-                    upsert: true,
-                });
-
-            if (uploadError) throw uploadError;
-
-            // 4. Return public URL
-            const { data } = supabase.storage
-                .from('complaints-images')
-                .getPublicUrl(filePath);
-
-            return data.publicUrl;
-        } catch (error) {
-            console.error("Storage Error:", error);
-            throw error;
-        }
-    };
 
     const pickImage = async () => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -142,35 +100,35 @@ export default function SubmitComplaint() {
 
             setLoading(true);
 
-            let imageUrl = null;
+            const formData = new FormData();
+            formData.append("title", title);
+            formData.append("description", description);
+            formData.append("category", category.toUpperCase().replace("ROADS", "ROAD"));
+            formData.append("priority", String(priority));
+            formData.append("latitude", location?.latitude?.toString() || "0");
+            formData.append("longitude", location?.longitude?.toString() || "0");
+            formData.append("address", "Captured from Mobile Device");
 
-            // ─── 1. Handle Image Upload to Supabase Storage ───
             if (image) {
-                // We use user.id which is now the Clerk user ID
-                imageUrl = await uploadImage(image, user.id);
+                const fileName = image.split("/").pop() || `complaint-${Date.now()}.jpg`;
+                const match = /\.([a-zA-Z0-9]+)$/.exec(fileName);
+                const extension = match?.[1]?.toLowerCase() || "jpg";
+                const mimeType = extension === "png" ? "image/png" : extension === "webp" ? "image/webp" : "image/jpeg";
+
+                formData.append("image", {
+                    uri: image,
+                    name: fileName,
+                    type: mimeType,
+                } as any);
             }
 
-            // ─── 2. Submit Complaint to Backend ───
-            const res = await fetch(
-                API_CONFIG.ENDPOINTS.COMPLAINTS,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                        title,
-                        description,
-                        category: category.toUpperCase().replace('ROADS', 'ROAD'), // Map 'roads' -> 'ROAD'
-                        priority,
-                        imageUrl: imageUrl,
-                        latitude: location?.latitude?.toString() || "0",
-                        longitude: location?.longitude?.toString() || "0",
-                        address: "Captured from Mobile Device",
-                    }),
-                }
-            );
+            const res = await fetch(API_CONFIG.ENDPOINTS.COMPLAINTS, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}` ,
+                },
+                body: formData,
+            });
 
             if (!res.ok) {
                 const result = await res.json().catch(() => ({}));
