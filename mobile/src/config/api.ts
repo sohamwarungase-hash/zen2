@@ -2,15 +2,56 @@
  * API Configuration
  * Centralized API endpoint management.
  */
+import { Platform } from "react-native";
+import Constants from "expo-constants";
+
+const LOCAL_BACKEND_PORT = "5000";
+
+const getDevHostFromExpo = (): string | null => {
+    const hostUri = Constants.expoConfig?.hostUri ?? Constants.expoConfig?.extra?.expoGo?.debuggerHost;
+    if (!hostUri) return null;
+
+    // hostUri can be values like "192.168.1.10:8081", "localhost:8081", or "[::1]:8081"
+    const normalizedHostUri = hostUri.trim();
+
+    if (normalizedHostUri.startsWith("[")) {
+        const closingBracketIndex = normalizedHostUri.indexOf("]");
+        if (closingBracketIndex > 1) {
+            return normalizedHostUri.slice(1, closingBracketIndex);
+        }
+    }
+
+    const colonCount = (normalizedHostUri.match(/:/g) || []).length;
+    const hasPort = colonCount === 1;
+    const host = hasPort ? normalizedHostUri.split(":")[0] : normalizedHostUri;
+
+    return host || null;
+};
+
+
+const formatHostForUrl = (host: string) => {
+    return host.includes(":") ? `[${host}]` : host;
+};
 
 const getBaseUrl = () => {
     if (process.env.EXPO_PUBLIC_API_URL) {
         return process.env.EXPO_PUBLIC_API_URL;
     }
 
-    // Fallback for local development
-    // 10.0.2.2 is the special IP to reach host from Android Emulator
-    return "http://10.0.2.2:5000";
+    const devHost = getDevHostFromExpo();
+
+    if (devHost && devHost !== "localhost" && devHost !== "127.0.0.1") {
+        return `http://${formatHostForUrl(devHost)}:${LOCAL_BACKEND_PORT}`;
+    }
+
+    // Fallback for emulator/simulator local development
+    if (Platform.OS === "android") {
+        // Android emulator host machine loopback
+        return `http://10.0.2.2:${LOCAL_BACKEND_PORT}`;
+    }
+
+    // iOS simulator host machine loopback
+    return `http://localhost:${LOCAL_BACKEND_PORT}`;
 };
 
 const API_BASE_URL = getBaseUrl();
@@ -33,4 +74,3 @@ export const API_CONFIG = {
         HEALTH: `${API_BASE_URL}/health`,
     },
 };
-

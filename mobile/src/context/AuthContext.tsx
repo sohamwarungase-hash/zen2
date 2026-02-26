@@ -71,7 +71,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setUser(profile);
             }
         } catch (error) {
-            console.error("Failed to fetch user profile:", error);
+            console.error(
+                "Failed to fetch user profile. This is usually a backend connectivity issue, not a Supabase login issue:",
+                error
+            );
         } finally {
             setLoading(false);
         }
@@ -108,4 +111,3 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-
