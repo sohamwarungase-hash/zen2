@@ -6,13 +6,12 @@ import api from './axios'
  */
 export const loginUser = async (email, password) => {
     const response = await api.post('/api/auth/login', { email, password })
-    const { user, session } = response.data
-
+    const { user, token } = response.data   // ✅ fixed: was { user, session }
     return {
-        token: session?.access_token || null,
-        refreshToken: session?.refresh_token || null,
+        token: token || null,
+        refreshToken: null,                 // backend doesn't return refreshToken
         user,
-        role: user.role, // Prisma role
+        role: user.role,
     }
 }
 
@@ -22,13 +21,12 @@ export const loginUser = async (email, password) => {
  */
 export const registerUser = async (name, email, password) => {
     const response = await api.post('/api/auth/register', { name, email, password })
-    const { user, session } = response.data
-
+    const { user, token } = response.data   // ✅ fixed: was { user, session }
     return {
-        token: session?.access_token || null,
-        refreshToken: session?.refresh_token || null,
+        token: token || null,
+        refreshToken: null,                 // backend doesn't return refreshToken
         user,
-        role: user.role, // Prisma role
+        role: user.role,
     }
 }
 
