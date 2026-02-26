@@ -15,6 +15,7 @@ export default function Register() {
     const [confirmPassword, setConfirmPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
+    const { setAuth } = useAuthStore()
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -48,13 +49,25 @@ export default function Register() {
 
         setLoading(true)
         try {
-            await registerUser(name, email, password)
+            const data = await registerUser(name, email, password)
+            const { token, refreshToken, user } = data
+            const role = user?.role || 'CITIZEN'
+
+            // Auto-login after registration
+            await setAuth({ token, refreshToken, user, role })
+
             toast({
                 variant: 'success',
-                title: 'Account Created!',
-                description: 'Please sign in with your credentials.',
+                title: 'Welcome to ZenSolve!',
+                description: 'Account created and logged in successfully.',
             })
-            navigate('/login')
+
+            // Redirect based on role
+            if (role === 'CITIZEN') {
+                navigate('/citizen/home')
+            } else {
+                navigate('/admin/dashboard')
+            }
         } catch (err) {
             // Error toast handled by axios interceptor
         } finally {
