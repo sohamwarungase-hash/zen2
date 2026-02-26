@@ -135,10 +135,10 @@ export default function ComplaintDetail() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {/* Photo */}
-                                {complaint.photo && (
+                                {(complaint.photo || complaint.imageUrl) && (
                                     <div className="rounded-lg overflow-hidden border">
                                         <img
-                                            src={complaint.photo}
+                                            src={complaint.photo || complaint.imageUrl}
                                             alt="Complaint photograph"
                                             className="w-full max-h-96 object-cover"
                                         />
@@ -164,12 +164,12 @@ export default function ComplaintDetail() {
                                             </div>
                                         </div>
                                     )}
-                                    {complaint.location && (
+                                    {(complaint.location || complaint.address) && (
                                         <div className="flex items-center gap-2 text-sm">
                                             <MapPin className="h-4 w-4 text-zenblue-400" />
                                             <div>
                                                 <p className="text-xs text-muted-foreground">Location</p>
-                                                <p className="font-medium text-zenblue-800">{complaint.location}</p>
+                                                <p className="font-medium text-zenblue-800">{complaint.location || complaint.address}</p>
                                             </div>
                                         </div>
                                     )}
