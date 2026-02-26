@@ -8,12 +8,29 @@ import Constants from "expo-constants";
 const LOCAL_BACKEND_PORT = "5000";
 
 const getDevHostFromExpo = (): string | null => {
-    const hostUri = Constants.expoConfig?.hostUri ?? Constants.manifest2?.extra?.expoGo?.debuggerHost;
+    const hostUri = Constants.expoConfig?.hostUri ?? Constants.expoConfig?.extra?.expoGo?.debuggerHost;
     if (!hostUri) return null;
 
-    // hostUri can be values like "192.168.1.10:8081" or "localhost:8081"
-    const host = hostUri.split(":")[0];
+    // hostUri can be values like "192.168.1.10:8081", "localhost:8081", or "[::1]:8081"
+    const normalizedHostUri = hostUri.trim();
+
+    if (normalizedHostUri.startsWith("[")) {
+        const closingBracketIndex = normalizedHostUri.indexOf("]");
+        if (closingBracketIndex > 1) {
+            return normalizedHostUri.slice(1, closingBracketIndex);
+        }
+    }
+
+    const colonCount = (normalizedHostUri.match(/:/g) || []).length;
+    const hasPort = colonCount === 1;
+    const host = hasPort ? normalizedHostUri.split(":")[0] : normalizedHostUri;
+
     return host || null;
+};
+
+
+const formatHostForUrl = (host: string) => {
+    return host.includes(":") ? `[${host}]` : host;
 };
 
 const getBaseUrl = () => {
@@ -24,7 +41,7 @@ const getBaseUrl = () => {
     const devHost = getDevHostFromExpo();
 
     if (devHost && devHost !== "localhost" && devHost !== "127.0.0.1") {
-        return `http://${devHost}:${LOCAL_BACKEND_PORT}`;
+        return `http://${formatHostForUrl(devHost)}:${LOCAL_BACKEND_PORT}`;
     }
 
     // Fallback for emulator/simulator local development
