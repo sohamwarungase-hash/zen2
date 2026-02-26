@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const complaintRoutes = require('./routes/complaintRoutes');
+const authRoutes = require('./routes/authRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -24,15 +25,17 @@ if (process.env.STORAGE_TYPE === 'local') {
   app.use('/uploads', express.static('uploads'));
 }
 
-// Routes
+// Health Check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
+  res.json({
+    status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Municipal Civic Complaint API'
   });
 });
 
+// Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/complaints', complaintRoutes);
 
 // Error Handling
