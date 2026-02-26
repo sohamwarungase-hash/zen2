@@ -21,3 +21,8 @@ export const registerUser = async (name, email, password) => {
         user,
     }
 }
+
+export const getCurrentUser = async () => {
+    const response = await api.get('/api/auth/me')
+    return response.data
+}
