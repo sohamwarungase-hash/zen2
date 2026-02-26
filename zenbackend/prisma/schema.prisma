@@ -8,8 +8,6 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ─── Enums ────────────────────────────────────────────────────────────────────
-
 enum Role {
   CITIZEN
   ADMIN
@@ -41,41 +39,68 @@ enum Department {
   SANITATION
 }
 
-// ─── Models ───────────────────────────────────────────────────────────────────
+enum Source {
+  MOBILE
+  WEB
+}
 
 model User {
-  id         String      @id @default(uuid())
-  name       String
-  email      String      @unique
-  phone      String?
-  role       Role        @default(CITIZEN)
-  department Department?
-  points     Int         @default(0)
-  createdAt  DateTime    @default(now())
-  complaints Complaint[]
+  id           String       @id @default(uuid())
+  name         String
+  email        String       @unique
+  phone        String?
+  role         Role         @default(CITIZEN)
+  department   Department?
+  points       Int          @default(0)
+  createdAt    DateTime     @default(now())
+  complaints   Complaint[]
+  validations  Validation[]
 }
 
 model Complaint {
-  id             String     @id @default(uuid())
-  title          String
-  description    String
-  category       Category   @default(OTHER)
-  priority       Int
-  status         Status     @default(SUBMITTED)
-  imageUrl       String?
-  latitude       Float
-  longitude      Float
-  department     Department
-  slaDeadline    DateTime?
-  userId         String
-  user           User       @relation(fields: [userId], references: [id])
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  id              String          @id @default(uuid())
+  title           String
+  description     String
+  photoUrl        String?
+  latitude        Float
+  longitude       Float
+  address         String?
+  category        Category
+  priority        Int             @default(5)
+  geoRiskBonus    Int             @default(0)
+  finalPriority   Int             @default(5)
+  status          Status          @default(SUBMITTED)
+  department      Department
+  slaDeadline     DateTime
+  slaBreach       Boolean         @default(false)
+  aiReasoning     String?
+  validationCount Int             @default(0)
+  source          Source          @default(MOBILE)
+  citizenId       String
+  citizen         User            @relation(fields: [citizenId], references: [id])
+  validations     Validation[]
+  statusHistory   StatusHistory[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
 
-  // ── 5 missing fields ──────────────────────────────────────────────────────
-  address        String?
-  resolvedAt     DateTime?
-  validationCount Int       @default(0)
-  isDuplicate    Boolean    @default(false)
-  parentId       String?
+model Validation {
+  id           String     @id @default(uuid())
+  complaintId  String
+  complaint    Complaint  @relation(fields: [complaintId], references: [id])
+  citizenId    String
+  citizen      User       @relation(fields: [citizenId], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@unique([complaintId, citizenId])
+}
+
+model StatusHistory {
+  id           String     @id @default(uuid())
+  complaintId  String
+  complaint    Complaint  @relation(fields: [complaintId], references: [id])
+  status       Status
+  changedBy    String
+  note         String?
+  createdAt    DateTime   @default(now())
 }

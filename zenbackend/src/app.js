@@ -19,7 +19,9 @@ app.use(helmet());
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 app.use(cors({
-    origin: process.env.NODE_ENV === 'development' ? '*' : process.env.CLIENT_URL,
+    origin: process.env.NODE_ENV === 'production'
+        ? process.env.CLIENT_URL
+        : true,
     credentials: true
 }));
 

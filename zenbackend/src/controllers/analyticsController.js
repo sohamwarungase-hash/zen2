@@ -1,68 +1,72 @@
 import prisma from '../config/prisma.js';
 
-export const getOverview = async (req, res, next) => {
+export const getOverview = async (_req, res, next) => {
     try {
-        const [total, open, inProgress, resolved, escalated] = await Promise.all([
+        const [total, open, inProgress, resolved, slaBreach] = await Promise.all([
             prisma.complaint.count(),
-            prisma.complaint.count({ where: { status: 'SUBMITTED' } }),
+            prisma.complaint.count({ where: { status: { in: ['SUBMITTED', 'ASSIGNED'] } } }),
             prisma.complaint.count({ where: { status: 'IN_PROGRESS' } }),
             prisma.complaint.count({ where: { status: 'RESOLVED' } }),
-            prisma.complaint.count({ where: { status: 'ESCALATED' } }),
+            prisma.complaint.count({ where: { slaBreach: true } }),
         ]);
 
-        res.json({ total, open, inProgress, resolved, escalated });
+        res.json({ total, open, inProgress, resolved, slaBreach });
     } catch (err) {
         next(err);
     }
 };
 
-export const getDepartments = async (req, res, next) => {
+export const getDepartments = async (_req, res, next) => {
     try {
         const groups = await prisma.complaint.groupBy({
-            by: ['department', 'status'],
+            by: ['department'],
             _count: { _all: true },
+            where: {},
         });
 
-        const result = {};
-        for (const row of groups) {
-            const dept = row.department;
-            if (!result[dept]) {
-                result[dept] = { total: 0, resolved: 0, pending: 0 };
-            }
-            result[dept].total += row._count._all;
-            if (row.status === 'RESOLVED') {
-                result[dept].resolved += row._count._all;
-            } else {
-                result[dept].pending += row._count._all;
-            }
-        }
+        const output = await Promise.all(groups.map(async (g) => {
+            const [resolved, pending, avgTimeResolvedMs, slaTotal, slaMet] = await Promise.all([
+                prisma.complaint.count({ where: { department: g.department, status: 'RESOLVED' } }),
+                prisma.complaint.count({ where: { department: g.department, status: { not: 'RESOLVED' } } }),
+                prisma.$queryRaw`SELECT AVG(EXTRACT(EPOCH FROM ("updatedAt" - "createdAt"))) * 1000 as ms FROM "Complaint" WHERE department = ${g.department}::"Department" AND status = 'RESOLVED'`,
+                prisma.complaint.count({ where: { department: g.department } }),
+                prisma.complaint.count({ where: { department: g.department, slaBreach: false } }),
+            ]);
 
-        res.json(result);
+            const avgTime = Number(avgTimeResolvedMs?.[0]?.ms || 0);
+            const slaPercent = slaTotal ? Math.round((slaMet / slaTotal) * 100) : 0;
+            return { department: g.department, resolved, pending, avgTime, slaPercent };
+        }));
+
+        res.json(output);
     } catch (err) {
         next(err);
     }
 };
 
-export const getHeatmap = async (req, res, next) => {
+export const getHeatmap = async (_req, res, next) => {
     try {
         const complaints = await prisma.complaint.findMany({
             select: {
-                id: true,
                 latitude: true,
                 longitude: true,
-                priority: true,
+                finalPriority: true,
                 category: true,
-                status: true,
             },
         });
 
-        res.json(complaints);
+        res.json(complaints.map((c) => ({
+            lat: c.latitude,
+            lng: c.longitude,
+            priority: c.finalPriority,
+            category: c.category,
+        })));
     } catch (err) {
         next(err);
     }
 };
 
-export const getTrends = async (req, res, next) => {
+export const getTrends = async (_req, res, next) => {
     try {
         const since = new Date();
         since.setDate(since.getDate() - 30);
@@ -70,13 +74,14 @@ export const getTrends = async (req, res, next) => {
         const complaints = await prisma.complaint.findMany({
             where: { createdAt: { gte: since } },
             select: { createdAt: true, category: true },
+            orderBy: { createdAt: 'asc' },
         });
 
         const result = {};
         for (const c of complaints) {
-            const dateStr = c.createdAt.toISOString().slice(0, 10);
-            const key = `${dateStr}__${c.category}`;
-            result[key] = (result[key] ?? 0) + 1;
+            const date = c.createdAt.toISOString().slice(0, 10);
+            if (!result[date]) result[date] = {};
+            result[date][c.category] = (result[date][c.category] || 0) + 1;
         }
 
         res.json(result);
