@@ -48,6 +48,9 @@ export default function Register() {
             return
         }
 
+        // 🔍 DIAGNOSTIC — remove after debugging
+        console.log('Sending:', { name, email, password })
+
         setLoading(true)
         try {
             const data = await registerUser(name, email, password)
