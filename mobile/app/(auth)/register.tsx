@@ -15,7 +15,7 @@ import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { Ionicons } from "@expo/vector-icons";
-import { supabase } from "@/services/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Register() {
     const [name, setName] = useState("");
@@ -24,6 +24,7 @@ export default function Register() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const { register } = useAuth();
 
     useEffect(() => {
         const checkConnectivity = async () => {
@@ -52,26 +53,8 @@ export default function Register() {
         }
 
         setLoading(true);
-        console.log(`[Signup] Attempting signup at: ${API_CONFIG.ENDPOINTS.REGISTER}`);
         try {
-            // Option 1: Call backend register (Handles Prisma Sync)
-            const response = await fetch(API_CONFIG.ENDPOINTS.REGISTER, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, name })
-            }).catch(fetchErr => {
-                console.error('[Signup] Fetch failed:', fetchErr);
-                throw new Error(`Network Error: ${fetchErr.message}. Verify backend is accessible at ${API_CONFIG.ENDPOINTS.REGISTER}`);
-            });
-
-            console.log(`[Signup] Response status: ${response.status}`);
-            const result = await response.json();
-            console.log(`[Signup] Result:`, result);
-
-            if (!response.ok) {
-                throw new Error(result.error || 'Registration failed');
-            }
-
+            await register(name, email, password);
             Alert.alert("Success", "Account created successfully! Please log in.");
             router.replace("/(auth)/login");
         } catch (err: any) {
