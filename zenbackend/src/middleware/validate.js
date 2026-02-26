@@ -1,0 +1,71 @@
+import { z } from 'zod';
+
+/**
+ * Shared valid status values (mirror of Prisma Status enum).
+ */
+const VALID_STATUSES = ['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'ESCALATED'];
+
+// ─── Schemas ──────────────────────────────────────────────────────────────────
+
+const complaintBodySchema = z.object({
+    title: z.string().min(5, 'Title must be at least 5 characters'),
+    description: z.string().min(20, 'Description must be at least 20 characters'),
+    // latitude & longitude arrive as FormData strings
+    latitude: z
+        .string()
+        .refine((v) => !isNaN(parseFloat(v)), { message: 'latitude must be a valid number' }),
+    longitude: z
+        .string()
+        .refine((v) => !isNaN(parseFloat(v)), { message: 'longitude must be a valid number' }),
+    address: z.string().optional(),
+});
+
+const statusUpdateSchema = z.object({
+    status: z.enum(VALID_STATUSES, {
+        errorMap: () => ({
+            message: `status must be one of: ${VALID_STATUSES.join(', ')}`,
+        }),
+    }),
+});
+
+// ─── Middleware factories ──────────────────────────────────────────────────────
+
+/**
+ * Validates POST /api/complaints request body.
+ * Returns 400 with field-level errors on failure; calls next() on success.
+ */
+export function validateComplaintBody(req, res, next) {
+    const result = complaintBodySchema.safeParse(req.body);
+
+    if (!result.success) {
+        const details = {};
+        for (const issue of result.error.issues) {
+            const field = issue.path[0] || 'unknown';
+            details[field] = details[field] ?? [];
+            details[field].push(issue.message);
+        }
+        return res.status(400).json({ error: 'Validation failed', details });
+    }
+
+    next();
+}
+
+/**
+ * Validates PATCH /api/complaints/:id/status request body.
+ * Returns 400 with field-level errors on failure; calls next() on success.
+ */
+export function validateStatusUpdate(req, res, next) {
+    const result = statusUpdateSchema.safeParse(req.body);
+
+    if (!result.success) {
+        const details = {};
+        for (const issue of result.error.issues) {
+            const field = issue.path[0] || 'unknown';
+            details[field] = details[field] ?? [];
+            details[field].push(issue.message);
+        }
+        return res.status(400).json({ error: 'Validation failed', details });
+    }
+
+    next();
+}

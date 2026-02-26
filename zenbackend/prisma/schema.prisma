@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  CITIZEN
+  ADMIN
+  DEPT_OFFICER
+}
+
+enum Category {
+  ROAD
+  WATER
+  GARBAGE
+  STREETLIGHT
+  SANITATION
+  OTHER
+}
+
+enum Status {
+  SUBMITTED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  ESCALATED
+}
+
+enum Department {
+  ROADS_AND_INFRASTRUCTURE
+  WATER_SUPPLY
+  SOLID_WASTE_MANAGEMENT
+  STREET_LIGHTING
+  SANITATION
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id         String      @id @default(uuid())
+  name       String
+  email      String      @unique
+  phone      String?
+  role       Role        @default(CITIZEN)
+  department Department?
+  points     Int         @default(0)
+  createdAt  DateTime    @default(now())
+  complaints Complaint[]
+}
+
+model Complaint {
+  id             String     @id @default(uuid())
+  title          String
+  description    String
+  category       Category   @default(OTHER)
+  priority       Int
+  status         Status     @default(SUBMITTED)
+  imageUrl       String?
+  latitude       Float
+  longitude      Float
+  department     Department
+  slaDeadline    DateTime?
+  userId         String
+  user           User       @relation(fields: [userId], references: [id])
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  // ── 5 missing fields ──────────────────────────────────────────────────────
+  address        String?
+  resolvedAt     DateTime?
+  validationCount Int       @default(0)
+  isDuplicate    Boolean    @default(false)
+  parentId       String?
+}
