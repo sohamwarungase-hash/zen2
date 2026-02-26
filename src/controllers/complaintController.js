@@ -5,7 +5,7 @@ const aiService = require('../services/aiService');
 const assignmentService = require('../services/assignmentService');
 
 const createComplaint = async (req, res) => {
-    const { description, category, latitude, longitude, user_id } = req.body;
+    const { description, address, category, latitude, longitude, user_id } = req.body;
     const photoBuffer = req.file?.buffer; // From multer memory storage
 
     // 1. Photo Upload (Abstraction)
@@ -24,6 +24,7 @@ const createComplaint = async (req, res) => {
     const complaint = await prisma.complaint.create({
         data: {
             description,
+            address,
             category,
             photoUrl,
             latitude: latNum,
@@ -44,6 +45,7 @@ const createComplaint = async (req, res) => {
         // 5. AI Analysis Integration
         const aiResponse = await aiService.analyzeComplaint({
             description,
+            address,
             category,
             photoUrl,
             location: { lat: latNum, lng: lngNum }

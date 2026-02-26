@@ -63,6 +63,7 @@ model Department {
 model Complaint {
   id               String          @id @default(uuid()) @db.Uuid
   description      String          @db.Text
+  address          String?         // Optional human-readable address
   category         String          // Original category provided by user
   photoUrl         String?
   latitude         Float

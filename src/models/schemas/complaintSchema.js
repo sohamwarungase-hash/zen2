@@ -6,6 +6,7 @@ const { z } = require('zod');
  */
 const complaintSchema = z.object({
     description: z.string().min(10, 'Description must be at least 10 characters').max(2000),
+    address: z.string().max(500).optional(),
     category: z.string().min(1),
     latitude: z.string().transform((val) => parseFloat(val)), // Multi-part sends strings
     longitude: z.string().transform((val) => parseFloat(val)),

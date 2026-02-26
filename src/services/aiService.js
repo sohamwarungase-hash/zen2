@@ -26,12 +26,13 @@ class AIService {
         });
     }
 
-    async analyzeComplaint({ description, category, photoUrl, location }) {
+    async analyzeComplaint({ description, address, category, photoUrl, location }) {
         try {
             // PROMPT Construction (Context Injected)
             const prompt = `
         Analyze the following municipal complaint:
         Description: ${description}
+        Address: ${address || 'Not provided'}
         Category: ${category}
         Location Context (lat/lng): ${JSON.stringify(location)}
         Image: ${photoUrl || 'Not provided'}
