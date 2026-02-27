@@ -64,7 +64,7 @@ export const API_CONFIG = {
         LOGIN: `${API_BASE_URL}/api/auth/login`,
         REGISTER: `${API_BASE_URL}/api/auth/register`,
         ME: `${API_BASE_URL}/api/auth/me`,
-        PROFILE: `${API_BASE_URL}/api/users/profile`,
+        PROFILE: `${API_BASE_URL}/api/auth/me`, // Same as ME now
         LOGOUT: `${API_BASE_URL}/api/auth/logout`,
 
         // Complaints

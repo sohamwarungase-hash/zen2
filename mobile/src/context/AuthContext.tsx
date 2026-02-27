@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
 
             const profile = await response.json();
-            setUser(profile);
+            setUser(profile.data || profile); // Handle both { success: true, data: { ... } } and direct profile objects Let's just use profile.data
         } catch (error) {
             console.error("Profile fetch failed:", error);
             await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
@@ -80,10 +80,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         const result = await response.json();
         if (!response.ok) {
-            throw new Error(result.error || "Login failed");
+            throw new Error(result.message || "Login failed");
         }
 
-        const accessToken = result?.session?.access_token;
+        const accessToken = result?.token;
         if (!accessToken) {
             throw new Error("Missing access token in login response");
         }
@@ -102,7 +102,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         const result = await response.json();
         if (!response.ok) {
-            throw new Error(result.error || "Registration failed");
+            throw new Error(result.message || "Registration failed");
         }
     };
 
