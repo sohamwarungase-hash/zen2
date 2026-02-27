@@ -5,7 +5,7 @@ const aiService = require('../services/aiService');
 const assignmentService = require('../services/assignmentService');
 
 const createComplaint = async (req, res) => {
-    const { description, address, category, latitude, longitude, user_id } = req.body;
+    const { description, address, category, latitude, longitude, citizen_name, citizen_email, citizen_phone } = req.body;
     const photoBuffer = req.file?.buffer; // From multer memory storage
 
     // 1. Photo Upload (Abstraction)
@@ -29,7 +29,9 @@ const createComplaint = async (req, res) => {
             photoUrl,
             latitude: latNum,
             longitude: lngNum,
-            userId: user_id,
+            citizenName: citizen_name || null,
+            citizenEmail: citizen_email || null,
+            citizenPhone: citizen_phone || null,
             zoneId,
             status: 'PENDING'
         }

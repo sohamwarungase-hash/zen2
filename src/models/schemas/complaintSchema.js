@@ -10,7 +10,9 @@ const complaintSchema = z.object({
     category: z.string().min(1),
     latitude: z.string().transform((val) => parseFloat(val)), // Multi-part sends strings
     longitude: z.string().transform((val) => parseFloat(val)),
-    user_id: z.string().uuid('user_id must be a valid UUID')
+    citizen_name: z.string().max(100).optional(),
+    citizen_email: z.string().email().optional(),
+    citizen_phone: z.string().max(20).optional()
 });
 
 module.exports = {

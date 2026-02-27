@@ -2,25 +2,12 @@ const prisma = require('../src/config/prisma');
 
 /**
  * Seed data for Phase-1 testing
- * Includes: Default Zones, Example Departments, and a System User
+ * Includes: Default Zones and Example Departments
  */
 async function main() {
     console.log('[SEED] Starting database seeding...');
 
-    // 1. Create a System User for Phase-1 intake testing
-    const user = await prisma.user.upsert({
-        where: { email: 'system@municipality.gov.in' },
-        update: {},
-        create: {
-            id: '00000000-0000-4000-a000-000000000001',
-            email: 'system@municipality.gov.in',
-            password: '$2b$10$dummyhashedpasswordforseeding000000000000000',
-            name: 'System Test User'
-        }
-    });
-    console.log(`[SEED] Created default system user: ${user.id}`);
-
-    // 2. Create the Default Municipal Zone (Static Bounding Box Logic)
+    // 1. Create the Default Municipal Zone (Static Bounding Box Logic)
     const defaultZone = await prisma.zone.upsert({
         where: { name: 'MUNICIPAL_HQ_ZONE' },
         update: {},

@@ -6,16 +6,10 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const complaintRoutes = require('./routes/complaintRoutes');
-const authRoutes = require('./routes/authRoutes');
-const authMiddleware = require('./middleware/auth');
 const errorHandler = require('./middleware/errorHandler');
-const { neon } = require('@neondatabase/serverless');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Neon serverless SQL client
-const sql = neon(process.env.DATABASE_URL);
 
 // Middleware
 app.use(helmet());
@@ -39,18 +33,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ─── Protected Route (Neon Auth + Neon Serverless) ────────────────────────
-app.get('/api/protected', authMiddleware, async (req, res) => {
-  const userId = req.user.userId;
-  const result = await sql`SELECT * FROM users WHERE id = ${userId}`;
-  res.json({
-    success: true,
-    user: result[0] || null,
-  });
-});
-
 // Routes
-app.use('/api/auth', authRoutes);
 app.use('/api/complaints', complaintRoutes);
 
 // Error Handling
