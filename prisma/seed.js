@@ -14,6 +14,7 @@ async function main() {
         create: {
             id: '00000000-0000-4000-a000-000000000001',
             email: 'system@municipality.gov.in',
+            password: '$2b$10$dummyhashedpasswordforseeding000000000000000',
             name: 'System Test User'
         }
     });
